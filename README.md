@@ -318,3 +318,7 @@ T02 and T03 started within seconds of each other, and T05 started while T04 was 
 - **uv:** the tool that runs the Python part and installs its libraries.
 - **Vite:** the tool that serves the viewer while you develop.
 - **Worker:** an agent that builds one ticket.
+
+## License
+
+[MIT](LICENSE)
