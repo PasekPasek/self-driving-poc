@@ -31,23 +31,36 @@ def tiny_run(tmp_path, name, seed=7, workers=1):
 def test_windowed_ray_cast_agrees_with_full(track):
     rng = np.random.default_rng(0)
     checked = 0
-    for _ in range(600):
+    for _ in range(3000):
         i = int(rng.integers(0, track.n))
         # Random pose on the track: centerline point, lateral offset inside the width, any heading.
         x, y = track.centerline[i]
         nx, ny = track.centerline[(i + 1) % track.n] - track.centerline[i]
         norm = np.hypot(nx, ny)
-        off = rng.uniform(-0.45, 0.45) * track.width
+        off = rng.uniform(-0.55, 0.55) * track.width  # includes just-off-track poses
         x, y = x - ny / norm * off, y + nx / norm * off
         heading = rng.uniform(-np.pi, np.pi)
         seg, _, dist = track.project(x, y)
-        if dist > track.width / 2:
-            continue
         full = read_sensors(track, x, y, heading)
-        windowed = read_sensors(track, x, y, heading, seg)
-        assert np.allclose(full, windowed, atol=1e-9)
+        windowed = read_sensors(track, x, y, heading, seg, dist)
+        assert np.array_equal(full, windowed)
         checked += 1
-    assert checked > 500
+    assert checked == 3000
+
+
+def test_windowed_ray_cast_exact_in_the_known_thin_strip(track):
+    # Poses 19.5-20.5 from the centerline (half width 20) near the hairpin/chicane used to mismatch.
+    rng = np.random.default_rng(1)
+    for _ in range(3000):
+        i = int(rng.integers(95, 120))
+        x, y = track.centerline[i]
+        nx, ny = track.centerline[(i + 1) % track.n] - track.centerline[i]
+        norm = np.hypot(nx, ny)
+        off = rng.choice([-1, 1]) * rng.uniform(19.5, 20.5)
+        x, y = x - ny / norm * off, y + nx / norm * off
+        heading = rng.uniform(-np.pi, np.pi)
+        seg, _, dist = track.project(x, y)
+        assert np.array_equal(read_sensors(track, x, y, heading), read_sensors(track, x, y, heading, seg, dist))
 
 
 def test_stall_stops_a_standing_car_as_timeout(track):
