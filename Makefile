@@ -1,7 +1,7 @@
 # One command runs the demo: `make demo` trains (seed 641, the committed run), prepares the
 # data and starts the viewer (Vite prints its URL, normally http://localhost:5173). Needs uv and Node 20.19+ or 22.12+.
 
-.PHONY: demo train web test
+.PHONY: demo train web test media
 
 demo: train web
 
@@ -20,3 +20,9 @@ web: web/node_modules/.package-lock.json
 test:
 	cd trainer && uv run pytest
 	cd web && npm run build && npm test
+
+# Optional: re-records docs/media/lap.gif and docs/media/learning.gif from web/public/replay.json.
+# Needs Google Chrome (or CHROME_PATH) and Python 3 with Pillow.
+media: web/node_modules/.package-lock.json
+	cd web && npm run build
+	node scripts/make_gifs.mjs
