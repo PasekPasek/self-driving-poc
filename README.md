@@ -38,8 +38,8 @@ only seeded from `fixtures/replay.sample.json` when it is missing.
 Python trains offline and writes one replay file. TypeScript replays that file in the browser. There is
 no server and no ML in the browser; the replay file is the only link between the two halves.
 
-- **Track.** `shared/track.json` holds the centreline (240 points, closed loop) and the track width.
-  `shared/make_track.py` regenerates it.
+- **Track.** [`shared/track.json`](shared/track.json) holds the centreline (240 points, closed loop) and the track width.
+  [`shared/make_track.py`](shared/make_track.py) regenerates it.
 - **Sensors.** Six rays cast from the car: front-left, front-centre, front-right, rear-right, rear-centre,
   rear-left. Each returns the distance to the nearest edge, saturating at 150 track units.
 - **Controller.** A tiny neural net: 6 sensor readings plus the car's speed in, 8 tanh hidden units, and
@@ -47,8 +47,8 @@ no server and no ML in the browser; the replay file is the only link between the
 - **Training.** A genetic algorithm (neuroevolution) over those weights: population 30, 3 elites, tournament
   selection of size 3, uniform crossover, and gaussian mutation (rate 0.05, sigma 0.1). Training stops two
   generations after the first lap, or after 80 generations.
-- **Replay contract.** `docs/replay-format.md` is the contract. The trainer writes it, the viewer reads it,
-  and `shared/validate_replay.py` checks a file against every rule in it.
+- **Replay contract.** [`docs/replay-format.md`](docs/replay-format.md) is the contract. The trainer writes it, the viewer reads it,
+  and [`shared/validate_replay.py`](shared/validate_replay.py) checks a file against every rule in it.
 - **Determinism.** Same seed, same bytes: the run is reproducible from `--seed`.
 
 ## Built by claude-crew
