@@ -6,15 +6,30 @@ from .constants import SENSOR_ANGLES, SENSOR_MAX_RANGE
 from .track import Track
 
 _ANGLES = np.asarray(SENSOR_ANGLES)
+_WALL_WINDOW = 24  # boundary segments searched either side of the car (~250 units of arc)
+_WINDOW_OFFSETS = np.arange(-_WALL_WINDOW, _WALL_WINDOW + 1)
 
 
-def read_sensors(track: Track, x: float, y: float, heading: float) -> np.ndarray:
-    """Six distances in 0..1 (1 = nothing within ``SENSOR_MAX_RANGE``), in ``SENSOR_ANGLES`` order."""
+def read_sensors(
+    track: Track, x: float, y: float, heading: float, seg: int | None = None
+) -> np.ndarray:
+    """Six distances in 0..1 (1 = nothing within ``SENSOR_MAX_RANGE``), in ``SENSOR_ANGLES`` order.
+
+    With ``seg`` (the car's nearest centerline segment) only the boundary segments within
+    ``_WALL_WINDOW`` of it are tested. That matches the full test whenever the car is on the
+    track, because the first wall a ray crosses lies within sensor range of the car.
+    """
     ang = _ANGLES + heading
     dx = np.cos(ang)[:, None]
     dy = np.sin(ang)[:, None]
-    ox, oy = track.wall_origin[:, 0], track.wall_origin[:, 1]
-    ex, ey = track.wall_edge[:, 0], track.wall_edge[:, 1]
+    origin, edge = track.wall_origin, track.wall_edge
+    if seg is not None:
+        n = track.n
+        idx = (seg + _WINDOW_OFFSETS) % n
+        idx = np.concatenate((idx, idx + n))  # both boundaries
+        origin, edge = origin[idx], edge[idx]
+    ox, oy = origin[:, 0], origin[:, 1]
+    ex, ey = edge[:, 0], edge[:, 1]
     wx = ox - x
     wy = oy - y
     denom = dx * ey - dy * ex  # (6, 2n)
