@@ -6,10 +6,14 @@ ELITE = 3
 TOURNAMENT = 3
 MUTATION_RATE = 0.05  # probability that a gene mutates
 MUTATION_SIGMA = 0.1
+INIT_SIGMA = 0.5  # std of the initial genes: small weights, so gen-0 cars wobble instead of spinning
+INIT_THROTTLE_BIAS = 1.0  # added to the throttle output bias at init: gen-0 cars drive, then crash
 
 
 def initial_population(rng: np.random.Generator, size: int, genome_size: int) -> np.ndarray:
-    return rng.normal(0.0, 1.0, (size, genome_size))
+    population = rng.normal(0.0, INIT_SIGMA, (size, genome_size))
+    population[:, -1] += INIT_THROTTLE_BIAS  # last gene = throttle output bias (see network.unpack)
+    return population
 
 
 def next_population(

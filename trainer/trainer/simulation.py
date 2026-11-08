@@ -70,7 +70,7 @@ def simulate(
     best = 0.0
 
     frames = [(x, y, heading)]
-    sensors = [read_sensors(track, x, y, heading, seg)]
+    sensors = [read_sensors(track, x, y, heading, seg, 0.0)]
     mark_best, mark_step = 0.0, 0
     outputs: list[tuple[float, float]] = []
     progress = [0.0]
@@ -101,7 +101,7 @@ def simulate(
         best = max(best, unwrapped)
 
         frames.append((x, y, heading))
-        sensors.append(read_sensors(track, x, y, heading, seg))
+        sensors.append(read_sensors(track, x, y, heading, seg, dist))
         if dist > half_width:
             progress.append(best)
             crash = (x, y, step + 1)

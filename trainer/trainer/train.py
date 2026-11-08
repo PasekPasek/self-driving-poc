@@ -1,8 +1,9 @@
-"""Neuroevolution trainer: ``python -m trainer.train --seed 42 --out ../web/public/replay.json``."""
+"""Neuroevolution trainer: ``python -m trainer.train --out ../web/public/replay.json``."""
 
 import argparse
 import os
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +14,7 @@ from .network import GENOME_SIZE
 from .replay import generation_json, write_replay
 
 EXTRA_GENERATIONS = 2  # generations run after the first completed lap
+DEFAULT_SEED = 641  # chosen with scripts/pick_seed.py: lap at generation 15, every section sees a frontier crash
 
 
 def train(
@@ -21,7 +23,7 @@ def train(
     max_generations: int = 80,
     stride: int = 8,
     workers: int = 1,
-    log=print,
+    log: Callable[[str], None] | None = print,
 ) -> list[dict]:
     """Evolve until a car completes the lap (plus two more generations); return replay generations."""
     rng = np.random.default_rng(seed)
@@ -35,7 +37,8 @@ def train(
             gen = generation_json(index, records)
             generations.append(gen)
             crashes = sum(c["crashed"] for c in gen["cars"])
-            log(f"gen {index:3d}  best {gen['bestProgress'] * 100:5.1f}%  crashes {crashes}/{population_size}")
+            if log:
+                log(f"gen {index:3d}  best {gen['bestProgress'] * 100:5.1f}%  crashes {crashes}/{population_size}")
             if gen["completedLap"] and extra_left is None:
                 extra_left = EXTRA_GENERATIONS
             elif extra_left is not None:
@@ -51,7 +54,7 @@ def train(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--out", type=Path, default=Path("../web/public/replay.json"))
     parser.add_argument("--population", type=int, default=30)
     parser.add_argument("--max-generations", type=int, default=80)
