@@ -20,6 +20,7 @@ const COLORS = {
 const CAR_LENGTH = 14;
 const CAR_WIDTH = 7;
 const LABEL_OFFSET = 26;
+const LABEL_HEIGHT = 13; // font size of the section labels, px
 const MARGIN = 0.94;
 
 export class Stage {
@@ -103,7 +104,10 @@ export class Stage {
       const c = centerline[mid];
       if (!c) continue;
       const n = rightNormal(centerline, mid);
-      const d = width / 2 + LABEL_OFFSET;
+      // Clear the asphalt by half the text's extent along the normal, so a label on a vertical band
+      // (e.g. "sweeping curve" on the left) does not run into the track.
+      const textHalf = (ctx.measureText(section.name).width / 2) * Math.abs(n.x) + (LABEL_HEIGHT / 2) * Math.abs(n.y);
+      const d = width / 2 + LABEL_OFFSET + textHalf;
       // Put the label on the side facing the middle of the track box, never on the outer edge.
       const { width: boxW, height: boxH } = this.track.box;
       const side = (c.x + n.x * d - boxW / 2) ** 2 + (c.y + n.y * d - boxH / 2) ** 2 <=

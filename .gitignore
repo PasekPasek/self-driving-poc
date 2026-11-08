@@ -6,4 +6,3 @@ __pycache__/
 dist/
 .claude/settings.local.json
 web/public/track.json
-web/public/replay.json
