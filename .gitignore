@@ -5,3 +5,5 @@ __pycache__/
 .pytest_cache/
 dist/
 .claude/settings.local.json
+web/public/track.json
+web/public/replay.json
