@@ -3,13 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smocza Pętla — replay</title>
+    <title>Smocza Pętla — training replay</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <canvas id="stage" aria-label="Replay of generation 0 on the Smocza Pętla track"></canvas>
-    <p id="status" role="status"></p>
+    <main id="app">
+      <div id="stage-wrap">
+        <canvas id="stage" aria-label="Swarm of cars learning the Smocza Pętla track"></canvas>
+        <div id="banner" hidden></div>
+        <p id="status" role="status"></p>
+      </div>
+      <aside id="panel" aria-label="Training progress">
+        <h1 id="gen-title">Generation – / –</h1>
+        <dl id="counters">
+          <div><dt>Attempts</dt><dd id="attempts">0</dd></div>
+          <div><dt>Best this gen</dt><dd id="best-gen">0%</dd></div>
+          <div><dt>Best overall</dt><dd id="best-all">0%</dd></div>
+        </dl>
+        <section aria-label="Best car sensors">
+          <h2>Sensors (best car)</h2>
+          <div id="sensors"></div>
+        </section>
+        <section aria-label="Best car controls">
+          <h2>Steer / throttle</h2>
+          <div class="gauge"><span>steer</span><div class="track centered"><i id="steer-fill"></i></div></div>
+          <div class="gauge"><span>throttle</span><div class="track centered"><i id="throttle-fill"></i></div></div>
+        </section>
+        <section aria-label="Progress chart">
+          <h2>Best progress per generation</h2>
+          <canvas id="chart" width="280" height="110"></canvas>
+        </section>
+        <section id="controls" aria-label="Playback controls">
+          <div class="row">
+            <button id="prev" type="button" title="Previous generation (←)" aria-label="Previous generation">⏮</button>
+            <button id="play" type="button" title="Play / pause (space)" aria-label="Pause">⏸</button>
+            <button id="next" type="button" title="Next generation (→)" aria-label="Next generation">⏭</button>
+          </div>
+          <div class="row" id="speeds" role="group" aria-label="Speed"></div>
+          <label class="slider">Generation <input id="slider" type="range" min="0" max="0" step="1" value="0" /></label>
+        </section>
+      </aside>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
