@@ -75,8 +75,8 @@ fast. Watch the red ✕ marks move further along the track, and the chart in the
    full left, +1 is full right) and how much **throttle** (gas) to give. In between are 8 small
    calculation steps called hidden units. The formula has **82 numbers** that can be tuned. Together
    they are a car's "genes". A different set of 82 numbers is a different driver.
-2. **Fitness** is the score of a driver: how far it got around the lap, from 0 to 1. A car that
-   finishes gets a small bonus if it finishes early.
+2. **Fitness** is the score of a driver: how far it got around the lap, from 0 to 1, plus up to 0.5 for
+   finishing early.
 3. **A genetic algorithm** is the "keep the best, copy with changes" recipe. It works in loops:
    - Start with a **population** of 30 drivers with random numbers.
    - Drive each one on the track and score it.
@@ -112,7 +112,7 @@ fast. Watch the red ✕ marks move further along the track, and the chart in the
   and 30, a weak first generation, mostly crashes in generation 1, no jump larger than 0.4). Seed
   641 was the only one where the best car's crash moved through **all 5 sections** of the track
   (the runner-up seeds managed 4 of 5). Its lap comes in generation 16 of the viewer, and the
-  largest single jump in progress before that is 20.6 percentage points.
+  largest single jump in progress before that is 20.6 points of the lap (for example from 57.7% to 78.3%).
 - **Throttle bias.** Randomly made cars often did nothing: with the gas near zero they stood still
   and never crashed, which is boring to watch. T07 adds +1 to the starting throttle number so cars
   drive forward and crash, which shows the learning clearly. Before this change, half of generation 1
@@ -120,8 +120,10 @@ fast. Watch the red ✕ marks move further along the track, and the chart in the
 
 ## How to run
 
-You need two free tools:
+You need four free tools:
 
+- **git** downloads the project. **make** runs the one-word commands below. Both come with most Linux
+  systems. On macOS, install the Xcode Command Line Tools with `xcode-select --install`.
 - **uv** runs the Python part (it fetches the right Python and libraries for you).
   Install: `curl -LsSf https://astral.sh/uv/install.sh | sh` ([other ways](https://docs.astral.sh/uv/)).
 - **Node.js 20.19+ or 22.12+** runs the browser part. Get it from [nodejs.org](https://nodejs.org/).
@@ -137,15 +139,17 @@ installs the viewer's dependencies and starts it. Open the address it prints, no
 http://localhost:5173. You should see the track, 30 cars and the side panel. Press play and
 watch generation 1 crash. Keep going until the LAP COMPLETE banner appears at generation 16.
 
+If port 5173 is already used by something else, pick another one: `make demo PORT=5180`.
+
 Because of determinism, training again gives the same file. The committed run is kept.
 
 | Command | What it does |
 |---|---|
 | `make demo` | Trains, then starts the viewer. |
 | `make train` | Only training. Rewrites `web/public/replay.json`. |
-| `make web` | Only the viewer, using the committed replay file. |
-| `make test` | Runs the Python tests, then builds the viewer and runs its tests. |
-| `make media` | Optional. Re-records the two GIFs from the real replay. Needs Google Chrome (or set `CHROME_PATH`) and Python 3 with Pillow. |
+| `make web` | Only the viewer, using the committed replay file. Also accepts `PORT=`. |
+| `make test` | Installs the viewer's dependencies if needed, runs the Python tests (trainer and shared), then builds the viewer and runs its tests. |
+| `make media` | Optional. Re-records the two GIFs from the real replay. Needs Google Chrome (or set `CHROME_PATH` to its location) and Python 3 with Pillow, an image library. |
 
 ## Project map
 
@@ -160,7 +164,7 @@ Because of determinism, training again gives the same file. The committed run is
 | [`web/`](web/) | The viewer: TypeScript drawing on an HTML canvas. |
 | [`web/public/replay.json`](web/public/replay.json) | The real training run shown by the demo. |
 | [`fixtures/replay.sample.json`](fixtures/replay.sample.json) | A tiny hand-made replay used only as a stand-in and in tests. |
-| [`scripts/make_gifs.mjs`](scripts/make_gifs.mjs), [`scripts/make_gif.py`](scripts/make_gif.py) | Record the viewer in headless Chrome and build the two GIFs in `docs/media/`. |
+| [`scripts/make_gifs.mjs`](scripts/make_gifs.mjs), [`scripts/make_gif.py`](scripts/make_gif.py) | Record the viewer in Chrome without a window and build the two GIFs in `docs/media/`. |
 | [`docs/media/`](docs/media/) | `lap.gif` and `learning.gif`, shown on this page. |
 | [`Makefile`](Makefile) | The commands above. |
 
@@ -194,17 +198,21 @@ a worker is already running.
 | T07 | Tune learning for a watchable show, pick seed 641 | worker | sonnet | T04, T05 |
 | T07 review | Checked T07 | reviewer | sonnet | T07 |
 | T06 | Real run in the demo, Makefile, this README | worker | haiku, then sonnet | T04, T05, T07 |
+| T06 review | Final check of the whole project | reviewer | opus | T06 |
 
-**Why each model.** Bigger models cost more, so the model is chosen to fit the job:
+**Why each model.** Bigger models cost more, so the coordinator (the agent that planned the work
+and picked the models) chose the model to fit each job. These reasons are its choices as the
+worker understood them:
 
 - **haiku** (cheapest) took T03 (first viewer skeleton: drawing, not much logic) and the first draft
   of T06 (glue and a README). T06 was later repaired by sonnet, because the human wanted a
   README a beginner can follow.
 - **sonnet** (middle) did most of the code and almost every review. It is good enough for clearly
   specified work.
-- **opus** (the most capable and expensive) was used once, to review T04. T04 is the machine-learning
-  core, where mistakes are subtle: is the training really deterministic, does the speed
-  calculation match the simulator exactly? That review also proved both.
+- **opus** (the most capable and expensive) was used twice: for the T04 review and for the final
+  review of T06. T04 is the machine-learning core, where mistakes are subtle: is the training
+  really deterministic, does the speed calculation match the simulator exactly? That review also
+  proved both. The final review looks at the whole project at once.
 
 ```mermaid
 graph TD
@@ -223,6 +231,7 @@ graph TD
   T04 -.-> R4[T04 review]
   T05 -.-> R5[T05 review]
   T07 -.-> R7[T07 review]
+  T06 -.-> R6[T06 review]
 ```
 
 Solid arrows mean "must wait for". Dotted arrows mean "is reviewed by".
@@ -250,7 +259,9 @@ prompts, and added the requirement that this README must be readable without any
 
 ### Journal excerpt
 
-crew keeps a log of what happened. This is a verbatim excerpt (times are local):
+crew keeps a log of what happened. This is a verbatim excerpt (times are local). Each line has four parts: time, ticket, event
+(`spawn` starts an agent, `done` means it finished, `merge` joins its work into the main line),
+and details. A short code like `0a0dc67` is the id of a git commit, one saved step of the code:
 
 ```text
 2026-11-08T19:10:29+01:00 T02-py-simulation spawn role=worker model=sonnet pane=wH:p7 branch=crew/T02-py-simulation
@@ -288,9 +299,12 @@ T02 and T03 started within seconds of each other, and T05 started while T04 was 
 - **Genetic algorithm:** keep the best, copy with small random changes, repeat.
 - **Genes:** the 82 tunable numbers that define a driver.
 - **Git worktree:** a separate working copy of the code, so agents do not collide.
+- **git:** the tool that records every saved step of the code.
 - **Hidden units:** the 8 small calculation steps between the network's inputs and outputs.
 - **Hairpin:** a very sharp turn.
 - **Mutation:** a small random change to a child's genes.
+- **Make:** a tool that runs named commands such as `make demo`.
+- **Merge:** join the work from a branch into the main line of the project.
 - **Neural network:** a small formula that turns inputs (distances, speed) into outputs (steer, throttle).
 - **numpy:** the Python library for fast number calculations.
 - **Population:** all drivers in one generation.
