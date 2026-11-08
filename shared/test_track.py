@@ -104,3 +104,15 @@ def test_sections_cover_loop_in_order(track):
     for prev, nxt in zip(secs, secs[1:]):
         assert nxt["fromIndex"] == prev["toIndex"] + 1
     assert [s["name"] for s in secs][0] == "start straight"
+
+
+def test_min_radius_of_curvature(track):
+    """Radius >= 1.25 x half-width everywhere, so neither boundary forms a cusp."""
+    c = np.array(track["centerline"])
+    a, b, d = np.roll(c, 1, axis=0), c, np.roll(c, -1, axis=0)
+    cross = np.abs((b - a)[:, 0] * (d - a)[:, 1] - (b - a)[:, 1] * (d - a)[:, 0])
+    lengths = (np.linalg.norm(b - a, axis=1) * np.linalg.norm(d - b, axis=1)
+               * np.linalg.norm(d - a, axis=1))
+    with np.errstate(divide="ignore"):
+        radius = lengths / (2 * cross)  # circumradius of three consecutive points; inf on a straight
+    assert radius.min() >= 1.25 * track["width"] / 2
