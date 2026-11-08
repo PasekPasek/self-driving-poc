@@ -48,9 +48,17 @@ def _clamp(v: float, lo: float, hi: float) -> float:
 
 
 def simulate(
-    track: Track, controller: Controller, max_frames: int = DEFAULT_MAX_FRAMES
+    track: Track,
+    controller: Controller,
+    max_frames: int = DEFAULT_MAX_FRAMES,
+    stall_frames: int | None = None,
+    stall_gain: float = 0.002,
 ) -> Episode:
-    """Run until crash, full lap or ``max_frames`` steps (timeout is not a crash)."""
+    """Run until crash, full lap or ``max_frames`` steps (timeout is not a crash).
+
+    With ``stall_frames`` the episode also ends (as a timeout) once best progress has not grown
+    by ``stall_gain`` within that many steps.
+    """
     x, y, heading = track.start
     speed = 0.0
     half_width = track.width / 2.0
@@ -62,7 +70,8 @@ def simulate(
     best = 0.0
 
     frames = [(x, y, heading)]
-    sensors = [read_sensors(track, x, y, heading)]
+    sensors = [read_sensors(track, x, y, heading, seg)]
+    mark_best, mark_step = 0.0, 0
     outputs: list[tuple[float, float]] = []
     progress = [0.0]
     crash = None
@@ -92,7 +101,7 @@ def simulate(
         best = max(best, unwrapped)
 
         frames.append((x, y, heading))
-        sensors.append(read_sensors(track, x, y, heading))
+        sensors.append(read_sensors(track, x, y, heading, seg))
         if dist > half_width:
             progress.append(best)
             crash = (x, y, step + 1)
@@ -103,6 +112,10 @@ def simulate(
             completed = True
             break
         progress.append(best)
+        if best >= mark_best + stall_gain:
+            mark_best, mark_step = best, step
+        elif stall_frames is not None and step - mark_step >= stall_frames:
+            break
 
     return Episode(
         frames=np.asarray(frames),
